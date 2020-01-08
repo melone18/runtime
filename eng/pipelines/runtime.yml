@@ -65,7 +65,8 @@ jobs:
       - eng/pipelines/libraries/*
 
 #
-# Build CoreCLR
+# Build CoreCLR checked
+# Only when it contains coreclr changes
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -75,31 +76,81 @@ jobs:
     - OSX_x64
     - Linux_x64
     - Linux_arm
+    - Linux_arm64
+    - Linux_musl_x64
     - Windows_NT_x86
     - Windows_NT_x64
     - Windows_NT_arm
     - Windows_NT_arm64
     jobParameters:
       testGroup: innerloop
+      condition: eq(variables['_containsCoreClrChange'], true)
 
 #
-# Build libraries using live CoreLib from CoreCLR
+# Build CoreCLR debug
+# Only when it contains coreclr changes
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: debug
+    platforms:
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: innerloop
+      condition: eq(variables['_containsCoreClrChange'], true)
+
+#
+# Build CoreCLR release
+# Only when it contains coreclr changes
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_arm64
+    - Linux_musl_x64
+    - Windows_NT_x64
+    - Windows_NT_arm
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: innerloop
+      condition: eq(variables['_containsCoreClrChange'], true)
+
+#
+# Build CoreCLR Formatting Job
+# Only when it contains coreclr changes
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    jobParameters:
+      condition: eq(variables['_containsCoreClrChange'], true)
+
+#
+# Build libraries using live CoreLib from CoreCLR release
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: Release
     platforms:
-    - OSX_x64
-    - Linux_x64
     - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_x64
+    - OSX_x64
     - Windows_NT_arm
     - Windows_NT_arm64
+    - Windows_NT_x64
+    - Windows_NT_x86
     jobParameters:
-      isOfficialBuild: false
       liveCoreClrBuildConfig: checked
+      condition: eq(variables['_containsCoreClrChange'], true)
 
 #
 # Test builds using live libraries build
@@ -140,7 +191,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       liveLibrariesBuildConfig: Release
-      condition: false
+      condition: eq(variables['_containsCoreClrChange'], false)
 
 #
 # Libraries Test Build
@@ -152,51 +203,47 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
     - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
     jobParameters:
       isOfficialBuild: false
       testScope: innerloop
-      liveCoreClrBuildConfig: checked
+      condition: or(eq(variables['_containsLibrariesChange'], true), eq(variables['_containsCoreClrChange'], true))
 
-#
-# Libraries Test Execution
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: Release
-    platforms:
-    - OSX_x64
-    - Linux_x64
-    - Linux_arm
-    - Windows_NT_x86
-    - Windows_NT_x64
-    - Windows_NT_arm
-    - Windows_NT_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    jobParameters:
-      isOfficialBuild: false
-      isFullMatrix: false
-      framework: netcoreapp
-      testScope: innerloop
-      liveCoreClrBuildConfig: checked
-      dependsOnBuildConfiguration: Release
-      condition: false
+# #
+# # Libraries Test Execution
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+#     buildConfig: Release
+#     platforms:
+#     - OSX_x64
+#     - Linux_x64
+#     - Linux_arm
+#     - Windows_NT_x86
+#     - Windows_NT_x64
+#     - Windows_NT_arm
+#     - Windows_NT_arm64
+#     helixQueueGroup: pr
+#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+#     jobParameters:
+#       isOfficialBuild: false
+#       isFullMatrix: false
+#       framework: netcoreapp
+#       testScope: innerloop
+#       liveCoreClrBuildConfig: checked
+#       dependsOnBuildConfiguration: Release
+#       condition: false
 
-#
-# Installer Build and Test
-#
-- template: /eng/pipelines/installer/installer-matrix.yml
-  parameters:
-    liveCoreClrBuildConfig: checked
-    liveLibrariesBuildConfig: Release
-    skipPlatforms:
-    # Not built by CoreCLR and Libraries yet.
-    - Linux_arm64
-    - Linux_musl_x64
-    - Linux_musl_arm64
+# #
+# # Installer Build and Test
+# #
+# - template: /eng/pipelines/installer/installer-matrix.yml
+#   parameters:
+#     liveCoreClrBuildConfig: checked
+#     liveLibrariesBuildConfig: Release
+#     skipPlatforms:
+#     # Not built by CoreCLR and Libraries yet.
+#     - Linux_arm64
+#     - Linux_musl_x64
+#     - Linux_musl_arm64

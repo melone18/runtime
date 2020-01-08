@@ -24,6 +24,7 @@ jobs:
       archType:  ${{ parameters.archType }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      isTestBuild: true
       condition: ${{ parameters.condition }}
       liveCoreClrBuildConfig: ${{ parameters.liveCoreClrBuildConfig }}
       timeoutInMinutes: ${{ parameters.timeoutInMinutes }}

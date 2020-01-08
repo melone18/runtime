@@ -6,6 +6,7 @@ parameters:
   framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
+  isTestBuild: false
   liveCoreClrBuildConfig: ''
   timeoutInMinutes: 150
   condition: true
@@ -76,7 +77,7 @@ jobs:
         - _coreClrDownloadPath: ''
         - _coreClrArtifactsPathArg: ''
 
-        - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+        - ${{ if and(ne(parameters.liveCoreClrBuildConfig, ''), eq(parameters.isTestBuild, false)) }}:
           - _coreClrDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/coreclr'
           - _coreClrArtifactName: 'CoreCLRProduct_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveCoreClrBuildConfig }}'
           - _coreClrArtifactsPathArg: ' /p:CoreCLRArtifactsPath=$(_coreClrDownloadPath)'
